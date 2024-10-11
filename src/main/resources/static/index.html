@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redis GUI</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <style>
+        .container {
+            margin-top: 20px;
+        }
+        .keys-list {
+            border-right: 1px solid #ddd;
+            height: 500px;
+            overflow-y: auto;
+        }
+        .key-details {
+            padding-left: 20px;
+        }
+        .key-item {
+            cursor: pointer;
+            padding: 10px;
+        }
+        .key-item:hover {
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="row">
+        <!-- Keys List on the Left -->
+        <div class="col-4 keys-list">
+            <h5>Available Keys</h5>
+            <ul id="keys" class="list-group">
+                <!-- Keys will be dynamically loaded here -->
+            </ul>
+        </div>
+
+        <!-- Key Details on the Right -->
+        <div class="col-8 key-details">
+            <h5>Key Details</h5>
+            <p><strong>Value:</strong> <span id="keyValue"></span></p>
+            <p><strong>TTL:</strong> <span id="keyTTL"></span></p>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Function to fetch keys and populate the list on the left side
+    async function fetchKeys() {
+        const response = await fetch('/api/redis/keys');
+        if (response.ok) {
+            const keysJson = await response.json();
+            console.log(keysJson)
+            document.getElementById('keys').innerHTML = keysJson.map(keyData => {
+                return `<li class="list-group-item key-item" onclick="fetchKeyDetails('${keyData}')">
+                            ${keyData}
+                        </li>`;
+            }).join('');
+        } else {
+            console.error('Error fetching keys:', response.statusText);
+        }
+    }
+
+    // Function to fetch the details (value and TTL) of a clicked key and display them
+    async function fetchKeyDetails(key) {
+        const valueResponse = await fetch(`/api/redis/get?key=${key}`);
+        const keyData = await valueResponse.json();
+        console.log(keyData)
+
+        document.getElementById('keyValue').innerText = keyData.value;
+        document.getElementById('keyTTL').innerText = keyData.ttl === '-1' ? 'No expiration' : `${keyData.ttl} minutes`;
+    }
+
+    // Fetch keys when the page loads
+    window.onload = fetchKeys;
+</script>
+
+</body>
+</html>
